@@ -5,6 +5,8 @@
  */
 package azu.gui.world;
 
+import java.util.ArrayList;
+
 /**
  *
  * @author Viviana
@@ -43,7 +45,7 @@ public class JPanelPosition extends javax.swing.JPanel {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
     private int[] position;
-    private JLabelFigure figure;
+    private ArrayList<JLabelFigure> figures = new ArrayList<>();
 
     public int[] getPosition() {
         return position;
@@ -53,27 +55,38 @@ public class JPanelPosition extends javax.swing.JPanel {
         this.position = position;
     }
 
-    public JLabelFigure getFigure() {
-        return figure;
+    public ArrayList<JLabelFigure> getFigures() {
+        return figures;
     }
 
-    public void setFigure(JLabelFigure figure) {
-        this.figure = figure;
-    }    
+    public void setFigures(ArrayList<JLabelFigure> figures) {
+        this.figures = figures;
+    }        
 
     public void addFigure(JLabelFigure figure) {
-        this.figure = figure;
-        this.add(this.figure);
+        this.figures.add(figure);
+        this.add(figure);
     }   
     
     public void addFigure(String path) {
-        this.figure = new JLabelFigure(path);
-        this.add(this.figure);
+        JLabelFigure figure = new JLabelFigure(path);
+        this.figures.add(figure);
+        this.add(figure);
+    }
+    
+    public void removeFigures() {
+        this.removeAll();
+        this.figures.clear();
     }
 
-    public void removeFigure() {
-        this.remove(this.figure);
-        this.figure = null;
+    public void removeFigure(JLabelFigure figure) {
+        if (figure == null) {
+            return;
+        }
+        this.remove(figure);
+        this.figures.remove(figure);
     }
 
+
+    
 }

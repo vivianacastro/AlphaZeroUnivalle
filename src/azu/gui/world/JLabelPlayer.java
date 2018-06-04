@@ -5,6 +5,7 @@
  */
 package azu.gui.world;
 
+import azu.algorithm.Piece;
 import javax.swing.JLabel;
 
 /**
@@ -12,51 +13,30 @@ import javax.swing.JLabel;
  * @author Viviana
  */
 public class JLabelPlayer extends JLabelFigure{    
-    private int[] position;
-    private int items;
-    private JLabel jLabelCount;
+    private Piece piece;
+    private JLabel label;
 
-    public JLabelPlayer(String name, int[] position, JLabel jLabelCount) {
+    public JLabelPlayer(String name, JLabel label) {
         super(name);
-        this.position = position;
-        this.jLabelCount = jLabelCount;
-    }
-    
-    public int[] getPosition() {
-        return position;
+        this.label = label;
+    }    
+
+    public JLabel getLabel() {
+        return label;
     }
 
-    public void setPosition(int[] position) {
-        this.position = position;
+    public void setLabel(JLabel label) {
+        this.label = label;
     }
 
-    public int getItems() {
-        return items;
+    public Piece getPiece() {
+        if (piece == null) {
+            piece = new Piece();
+        }
+        return piece;
     }
 
-    public void setItems(int items) {
-        this.items = items;
-        this.jLabelCount.setText(String.valueOf(this.items));
+    public void setPiece(Piece piece) {
+        this.piece = piece;
     }
-    
-    public void increaseItems() {
-        this.items++;
-        this.jLabelCount.setText(String.valueOf(this.items));
-    }
-    
-    public void decreaseItems() {
-        this.items--;
-        this.jLabelCount.setText(String.valueOf(this.items));
-    }
-    
-    public void addItems(int items) {
-        this.items += items;
-        this.jLabelCount.setText(String.valueOf(this.items));
-    }
-    
-    public void restartItems() {
-        this.items = 0;
-        this.jLabelCount.setText(String.valueOf(this.items));
-    }
-    
 }

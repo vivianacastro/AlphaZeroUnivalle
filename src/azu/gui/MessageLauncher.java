@@ -6,11 +6,7 @@
 package azu.gui;
 
 import java.awt.Component;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 
 /**
  *
@@ -18,23 +14,14 @@ import javax.swing.JTextField;
  */
 public class MessageLauncher {
     
-    /**
-     * Atributos privados de la clase.
-     */
-    Component parentComponent;
-
-    public MessageLauncher(Component parentComponent) {
-        this.parentComponent = parentComponent;
-    }
-    
-    public void displayMessageDialog(String message, String title, int type) {
-        JOptionPane.showMessageDialog(this.parentComponent, message, title, type);
+    public static void displayMessageDialog(Component parentComponent, String message, String title, int type) {
+        JOptionPane.showMessageDialog(parentComponent, message, title, type);
     }
 
-    public int displayConfirmDialog(String message, String title) {
-        return JOptionPane.showConfirmDialog(this.parentComponent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+    public static int displayConfirmDialog(Component parentComponent, String message, String title) {
+        return JOptionPane.showConfirmDialog(parentComponent, message, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
     }
-    public String displayInputDialog(String message, String title){
-        return JOptionPane.showInputDialog(this.parentComponent, message, title, JOptionPane.QUESTION_MESSAGE);
+    public static String displayInputDialog(Component parentComponent, String message, String title){
+        return JOptionPane.showInputDialog(parentComponent, message, title, JOptionPane.QUESTION_MESSAGE);
     }
 }

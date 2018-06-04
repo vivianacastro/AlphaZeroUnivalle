@@ -5,6 +5,7 @@
  */
 package azu.gui;
 
+import azu.AppConstants;
 import azu.gui.world.JPanelWorld;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,7 +46,6 @@ public class AzuMainFrame extends javax.swing.JFrame {
         jPanelGameContent = new javax.swing.JPanel();
         jPanelGameHeader = new javax.swing.JPanel();
         jLabelTittle = new javax.swing.JLabel();
-        jLabelItems = new javax.swing.JLabel();
         jPanelGameBoard = new javax.swing.JPanel();
         jPanelDetails = new javax.swing.JPanel();
         jPanelPlayer = new javax.swing.JPanel();
@@ -78,9 +78,6 @@ public class AzuMainFrame extends javax.swing.JFrame {
         jLabelTittle.setText("AlphaZero Univalle");
         jPanelGameHeader.add(jLabelTittle);
 
-        jLabelItems.setText("Items");
-        jPanelGameHeader.add(jLabelItems);
-
         jPanelGameContent.add(jPanelGameHeader, java.awt.BorderLayout.NORTH);
 
         jPanelGameBoard.setMaximumSize(new java.awt.Dimension(500, 500));
@@ -101,7 +98,6 @@ public class AzuMainFrame extends javax.swing.JFrame {
         jPanelPlayer.add(jLabelCountPlayer);
 
         jPanelDetails.add(jPanelPlayer);
-        jPanelPlayer.getAccessibleContext().setAccessibleName("Jugador");
 
         jPanelMachine.setBorder(javax.swing.BorderFactory.createTitledBorder("Maquina"));
 
@@ -134,7 +130,6 @@ public class AzuMainFrame extends javax.swing.JFrame {
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabelCountMachine;
     private javax.swing.JLabel jLabelCountPlayer;
-    private javax.swing.JLabel jLabelItems;
     private javax.swing.JLabel jLabelItemsMachine;
     private javax.swing.JLabel jLabelItemsPlayer;
     private javax.swing.JLabel jLabelTittle;
@@ -146,32 +141,31 @@ public class AzuMainFrame extends javax.swing.JFrame {
     private javax.swing.JPanel jPanelPlayer;
     // End of variables declaration//GEN-END:variables
 
-    private static final int WORLD_DIM = 6;
-    private static final int WORLD_ITEMS = 4;
-
     private MessageLauncher messageLauncher;
     private JPanelWorld jPanelWorld;
     
     private void newGame() {
         // Inicializamos el lanzador de mensajes.
-        this.messageLauncher = new MessageLauncher(this);
-        int items = Integer.valueOf(this.messageLauncher.displayInputDialog("Ingresa el numero de items.", ""));
-        
-        // Configuramos el panel del mundo.
-        this.setupWorldContainer(items);
-        
-        // Update GUI.
-        this.jPanelWorld.updateUI();
-        
-        // Update labels.
-        this.jLabelCountPlayer.setText(String.valueOf(0));
-        this.jLabelCountMachine.setText(String.valueOf(0));
+        try {
+            int items = Integer.valueOf(this.messageLauncher.displayInputDialog(this, "Ingresa el numero de items.", ""));
+            // Configuramos el panel del mundo.
+            this.setupWorldContainer(items);
+
+            // Update GUI.
+            this.jPanelWorld.updateUI();
+
+            // Update labels.
+            this.jLabelCountPlayer.setText(String.valueOf(0));
+            this.jLabelCountMachine.setText(String.valueOf(0));
+        } catch (Exception ex) {
+            Logger.getLogger(AzuMainFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     private void setupWorldContainer(int items) {
-        items = items != 0 ? items : WORLD_ITEMS;
+        items = items != 0 ? items : AppConstants.WORLD_ITEMS;
         try {
-            this.jPanelWorld = new JPanelWorld(WORLD_DIM, items, this.jLabelCountPlayer, this.jLabelCountMachine);
+            this.jPanelWorld = new JPanelWorld(items, this.jLabelCountPlayer, this.jLabelCountMachine);
         } catch (Exception ex) {
             Logger.getLogger(AzuMainFrame.class.getName()).log(Level.SEVERE, null, ex);
         }

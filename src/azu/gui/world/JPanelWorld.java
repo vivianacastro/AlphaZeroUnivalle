@@ -5,6 +5,12 @@
  */
 package azu.gui.world;
 
+import azu.AppConstants;
+import azu.algorithm.MiniMax;
+import azu.algorithm.MiniMaxUtils;
+import azu.algorithm.Node;
+import azu.algorithm.Piece;
+import azu.gui.MessageLauncher;
 import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.MouseEvent;
@@ -12,65 +18,58 @@ import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
  *
  * @author Viviana
  */
-public class JPanelWorld extends JPanel {
-
-    private static final String APPLE_PATH = "src/resources/images/apple.png";
-    private static final String WHITE_HORSE_PATH = "src/resources/images/horse_white.png";
-    private static final String BLACK_HORSE_PATH = "src/resources/images/horse_black.png";
-
-    private static final int MANHATAN = 3;
-
-    private static final Color CYAM = new Color(154, 174, 240);
-    private static final Color GRAY = new Color(243, 244, 247);
+public class JPanelWorld extends JPanel {   
 
     private int items;
-    private final int dim;
-
-    private JPanelPosition[][] matrix;
+    
+    private JPanelPosition[][] board;
+    
     private JLabelPlayer player;
-    private final JLabel jLabelCountPlayer;
     private JLabelPlayer machine;
-    private final JLabel jLabelCountMachine;
     private final MyMouseLister mouseListener = new MyMouseLister();
+    
+    private boolean machineTime;
 
-    public JPanelWorld(int dim, int items, JLabel jLabelCountPlayer, JLabel jLabelCountMachine) throws Exception {
-        this.dim = dim;
+    public JPanelWorld(int items, JLabel jLabelCountPlayer, JLabel jLabelCountMachine) throws Exception {
         this.items = items;
-        this.jLabelCountPlayer = jLabelCountPlayer;
-        this.jLabelCountMachine = jLabelCountMachine;
+        this.player = new JLabelPlayer(AppConstants.BLACK_HORSE_PATH, jLabelCountPlayer);
+        this.machine = new JLabelPlayer(AppConstants.WHITE_HORSE_PATH, jLabelCountMachine);
         this.setupWorldContainer();
         this.setupWord();
         this.setupItems();
-    }
+        // Habilitamos el primer movimiento de la maquina.
+        this.moveMachine();
+    } 
 
     private void setupWorldContainer() {
-        this.setLayout(new GridLayout(this.dim, this.dim));
+        this.setLayout(new GridLayout(AppConstants.WORLD_DIM, AppConstants.WORLD_DIM));
     }
 
     private void setupWord() {
-        this.matrix = new JPanelPosition[this.dim][this.dim];
+        this.board = new JPanelPosition[AppConstants.WORLD_DIM][AppConstants.WORLD_DIM];
         JPanelPosition jPanelTmp;
 
-        for (int i = 0; i < matrix.length; i++) {
-            Color color = CYAM;
+        for (int i = 0; i < AppConstants.WORLD_DIM; i++) {
+            Color color = AppConstants.CYAM;
             if (i % 2 == 0) {
-                color = GRAY;
+                color = AppConstants.GRAY;
             }
-            for (int j = 0; j < matrix.length; j++) {
+            for (int j = 0; j < AppConstants.WORLD_DIM; j++) {
                 jPanelTmp = new JPanelPosition();
                 jPanelTmp.setBackground(color);
-                color = GRAY.equals(color) ? CYAM : GRAY;
-                this.matrix[i][j] = jPanelTmp;
+                color = AppConstants.GRAY.equals(color) ? AppConstants.CYAM : AppConstants.GRAY;
+                this.board[i][j] = jPanelTmp;
                 jPanelTmp.setLayout(new GridLayout(1, 1));
 
                 // Setup game controls.
-                jPanelTmp.addMouseListener(mouseListener);
+                jPanelTmp.addMouseListener(this.mouseListener);
 
                 // Setup position.
                 jPanelTmp.setPosition(new int[]{i, j});
@@ -90,19 +89,19 @@ public class JPanelWorld extends JPanel {
         // Setup items.
         for (int i = 0; i < this.items; i++) {
             int[] position = positions.get(i);
-            this.matrix[position[0]][position[1]].addFigure(APPLE_PATH);
+            this.board[position[0]][position[1]].addFigure(AppConstants.APPLE_PATH);
         }
 
         // Setup horses.
         // Setup player.
-        this.player = new JLabelPlayer(BLACK_HORSE_PATH, positions.get(this.items), this.jLabelCountPlayer);
-        this.matrix[this.player.getPosition()[0]][this.player.getPosition()[1]].addFigure(this.player);
+        this.player.getPiece().setPosition(positions.get(this.items));
+        this.board[this.player.getPiece().getPosition()[0]][this.player.getPiece().getPosition()[1]].addFigure(this.player);
 
         // Setup machine.
-        this.machine = new JLabelPlayer(WHITE_HORSE_PATH, positions.get(this.items + 1), this.jLabelCountMachine);
-        this.matrix[this.machine.getPosition()[0]][this.machine.getPosition()[1]].addFigure(this.machine);
+        this.machine.getPiece().setPosition(positions.get(this.items + 1));
+        this.board[this.machine.getPiece().getPosition()[0]][this.machine.getPiece().getPosition()[1]].addFigure(this.machine);
     }
-
+    
     private ArrayList<int[]> getRndPositions(int n) {
         ArrayList<int[]> positions = new ArrayList<>();
 
@@ -120,12 +119,49 @@ public class JPanelWorld extends JPanel {
 
     private int[] getRndPosition() {
         Random rnd = new Random();
-        int x = rnd.nextInt(this.dim);
-        int y = rnd.nextInt(this.dim);
+        int x = rnd.nextInt(AppConstants.WORLD_DIM);
+        int y = rnd.nextInt(AppConstants.WORLD_DIM);
         // System.out.println(String.format("[%d,%d]", x, y));
         return new int[]{x, y};
     }
 
+    private void moveMachine() {
+        this.machineTime = true;
+        // Construimos el estado actual del tablero.
+        Node node = this.buildNode();
+        // Obtenemos la primer posición de la maquina.
+        int[] position = MiniMax.miniMax(node, AppConstants.DEPTH);
+        // Movemos la ficha.
+        this.movePiece(this.machine, position);
+        this.machineTime = false;
+    }
+    
+    private Node buildNode() {
+        Node node = new Node();
+        // Configuramos las fichas.
+        node.setOwner(new Piece(this.player.getPiece()));
+        node.setOpponent(new Piece(this.machine.getPiece()));
+        // Configuramos el tablero.
+        node.setMatrix(this.buildBoardState());
+        
+        return node;
+    }
+    
+    private int[][] buildBoardState() {
+        int[][] matrix = new int[AppConstants.WORLD_DIM][AppConstants.WORLD_DIM];
+        for (int i = 0; i < AppConstants.WORLD_DIM; i++) {
+            for (int j = 0; j < AppConstants.WORLD_DIM; j++) {
+                matrix[i][j] = AppConstants.Agent.EMPTY.value();
+                if (this.board[i][j].getFigures() != null 
+                        && !this.board[i][j].getFigures().isEmpty() 
+                        && this.board[i][j].getFigures().get(0) instanceof JLabelFigure) {
+                    matrix[i][j] = AppConstants.Agent.ITEM.value();
+                }
+            }
+        }
+        return matrix;
+    }
+    
     private boolean contains(ArrayList<int[]> positions, int[] position) {
         // this.showPositions(positions);
         // System.out.println(String.format("[%d, %d]", position[0], position[1]));        
@@ -168,53 +204,63 @@ public class JPanelWorld extends JPanel {
     }
 
     public void movePiece(JLabelPlayer p, int[] next) {
-        int[] previous = p.getPosition();
+        int[] previous = p.getPiece().getPosition();
         // Borramos la imagen de la casilla actual.
-        matrix[previous[0]][previous[1]].removeFigure();
+        this.board[previous[0]][previous[1]].removeFigure(p);
         // Actualizamos la nueva posición del caballo.
-        p.setPosition(next);
-
+        p.getPiece().setPosition(next);
+        
         // Si en dicha posición esta otro caballo le quita los items.
-        if (matrix[next[0]][next[1]].getFigure() instanceof JLabelPlayer) {
-            JLabelPlayer opponent = (JLabelPlayer) matrix[next[0]][next[1]].getFigure();
-            p.addItems(opponent.getItems());
-            opponent.restartItems();
+        if (this.board[next[0]][next[1]].getFigures() != null &&
+                !this.board[next[0]][next[1]].getFigures().isEmpty() &&
+                this.board[next[0]][next[1]].getFigures().get(0) instanceof JLabelPlayer) {
+            JLabelPlayer opponent = (JLabelPlayer) this.board[next[0]][next[1]].getFigures().get(0);
+            p.getPiece().addItems(opponent.getPiece().getItems());
+            opponent.getPiece().restartItems();
         } // Si en dicha posicion había una manzana.
-        else if (matrix[next[0]][next[1]].getFigure() instanceof JLabelFigure) {
-            matrix[next[0]][next[1]].removeFigure();
-            p.increaseItems();
+        else if (this.board[next[0]][next[1]].getFigures() != null &&
+                !this.board[next[0]][next[1]].getFigures().isEmpty() && 
+                this.board[next[0]][next[1]].getFigures().get(0) instanceof JLabelFigure) {
+            this.board[next[0]][next[1]].removeFigures();
+            p.getPiece().increaseItems();
+            // Decrementamos el total de items.
+            this.items -= 1;
+            
+            // Si la cantidad de items es 0, el juego termino.
+            if (this.items == 0) {
+                String message;
+                if (this.player.getPiece().getItems() == this.machine.getPiece().getItems()) {
+                    message = String.format("Empate");
+                } else {
+                    String winner = this.player.getPiece().getItems() < this.machine.getPiece().getItems()? "la maquina" : "el jugador";
+                    message = String.format("Ha ganado %s.", winner);
+                }
+                MessageLauncher.displayMessageDialog(this, message, "", JOptionPane.INFORMATION_MESSAGE);
+            }
         }
 
         // Actualizamos la imagen de la casilla actual.
-        matrix[next[0]][next[1]].addFigure(p.getImage());
-
-        // Actualizamos la interfaz.
-        this.updateUI();
+        this.board[next[0]][next[1]].addFigure(p);        
     }
 
     public boolean isPlayerPostion(int[] position) {
-        return this.player.getPosition()[0] == position[0] && this.player.getPosition()[1] == position[1];
+        return this.player.getPiece().getPosition()[0] == position[0] && this.player.getPiece().getPosition()[1] == position[1];
     }
 
     public boolean isMachinePosition(int[] position) {
-        return this.machine.getPosition()[0] == position[0] && this.machine.getPosition()[1] == position[1];
+        return this.machine.getPiece().getPosition()[0] == position[0] && this.machine.getPiece().getPosition()[1] == position[1];
     }
 
-    public boolean isPosibleMove(int[] previous, int[] next) {
-        boolean validx = Math.abs(previous[0] - next[0]) == 1 || Math.abs(previous[0] - next[0]) == 2;
-        boolean validy = Math.abs(previous[1] - next[1]) == 1 || Math.abs(previous[1] - next[1]) == 2;
-        int manhatan = Math.abs(previous[0] - next[0]) + Math.abs(previous[1] - next[1]);
-
-        return validx & validy && manhatan == MANHATAN;
-    }
-
-    private void cleanBox() {
-    }
-
-    protected class MyMouseLister implements MouseListener {
+    protected class MyMouseLister implements MouseListener {        
 
         @Override
         public void mouseClicked(MouseEvent me) {
+            if (items == 0) {
+                return;
+            }
+            if (machineTime) {
+                return;
+            }
             JPanelPosition jp = (JPanelPosition) me.getSource();
             // System.out.println("Mouse clicked.");
             // Si es la posición de jugador.
@@ -222,10 +268,25 @@ public class JPanelWorld extends JPanel {
                 // System.out.println("Player position");
                 // Si es la posición del jugador mostramos los posibles movimientos.
 
-            } else if (isPosibleMove(player.getPosition(), jp.getPosition())) {
+            } else if (MiniMaxUtils.isPosibleMove(player.getPiece().getPosition(), jp.getPosition())) {
                 // System.out.println("Posible move.");
                 // Si es un posible movimiento lo ejecutamos.
                 movePiece(player, jp.getPosition());
+                
+                // Actualizamos los contadores.
+                player.getLabel().setText(String.valueOf(player.getPiece().getItems())); 
+                machine.getLabel().setText(String.valueOf(machine.getPiece().getItems()));
+                // Actualizamos la interfaz.
+                updateUI();
+                
+                // Movemos la maquina.
+                moveMachine();
+                
+                // Actualizamos los contadores.
+                player.getLabel().setText(String.valueOf(player.getPiece().getItems())); 
+                machine.getLabel().setText(String.valueOf(machine.getPiece().getItems()));
+                // Actualizamos la interfaz.
+                updateUI();
             }
         }
 
